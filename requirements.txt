@@ -1,0 +1,36 @@
+# Core deep learning
+torch
+torchvision
+timm
+
+# Foundation models & PEFT
+transformers
+peft
+open_clip_torch
+
+# Classical ML & boosting
+scikit-learn
+lightgbm
+xgboost
+
+# Image processing & handcrafted / frequency features
+opencv-python
+scikit-image
+Pillow
+PyWavelets
+
+# Numerics & data
+numpy
+pandas
+scipy
+
+# Visualization
+matplotlib
+seaborn
+
+# Explainability
+grad-cam
+
+# Notebooks & utilities
+jupyter
+tqdm
