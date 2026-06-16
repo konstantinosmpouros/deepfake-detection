@@ -8,19 +8,17 @@ transformers
 peft
 open_clip_torch
 
-# Classical ML & boosting
+# Metrics & data splitting (no classical-ML classifiers — deep-learning-only project)
 scikit-learn
-lightgbm
-xgboost
 
-# Image processing & handcrafted / frequency features
-opencv-python
-scikit-image
+# Image I/O & processing (also robustness perturbations: JPEG / blur / resize / noise)
+# opencv-python<4.12 keeps a numpy 1.x-compatible build (4.12+ requires numpy>=2).
+opencv-python<4.12
 Pillow
-PyWavelets
 
-# Numerics & data
-numpy
+# Numerics & data (incl. FFT/DCT for the frequency stream)
+# numpy pinned <2.0 for compatibility with the wider environment (e.g. numba).
+numpy<2.0
 pandas
 scipy
 
@@ -34,3 +32,13 @@ grad-cam
 # Notebooks & utilities
 jupyter
 tqdm
+
+# Dataset download
+kagglehub
+
+# App: backend (FastAPI) + frontend (Streamlit), no Docker
+fastapi
+uvicorn
+python-multipart
+streamlit
+requests

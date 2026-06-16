@@ -1,6 +1,11 @@
-# Detecting Deepfakes & AI-Generated Images: A Complete Method Guide for a CIFAKE-Centred MSc Project
+# Detecting Deepfakes & AI-Generated Images: A Complete Method Guide
+
+> **Project update (2026-06) — read first.** This project **no longer uses CIFAKE (32×32)** — it was dropped as too low-resolution for photographic detection, transfer learning, and a meaningful upload-a-photo app. The datasets are now **`ai-real-images`** (`tristanzhang32/ai-generated-images-vs-real-images`, ~60k photo-resolution real-vs-AI images from Stable Diffusion + Midjourney + DALL·E) as the **primary** training/eval set, and **`tiny-genimage`** (a GenImage subset, 7 generators) as the **cross-generator OOD** test set.
+>
+> Therefore the **CIFAKE-specific guidance below no longer applies** (32×32 handling, 32→224 upsampling, CIFAR-style stems, and any CIFAKE accuracy figures) and is retained only as historical context. The **higher-level methodology is dataset-agnostic and still valid**: transfer learning, LoRA/PEFT, CLIP/DINOv2 probes, two-stream frequency fusion, the generalization gap, robustness curves, and explainability. See [CLAUDE.md](../CLAUDE.md) for the current plan.
 
 ## TL;DR
+
 - **For a 3-person MSc project, the highest-value, realistic pipeline is: (1) a small CNN trained from scratch on 32×32 (reproducing the CIFAKE baseline ~92.98%), (2) a fine-tuned backbone — ResNet50V2 reached ~96.35% and an edge-enhanced ViT reached 97.75% accuracy / F1 0.9777 on CIFAKE — and (3) a CLIP linear-probe for cross-generator generalization.** Classical/handcrafted baselines (LightGBM on fused HOG/LBP/GLCM/DCT/wavelet features) reach F1 ≈ 0.9447 and are cheap, CPU-trainable and interpretable.
 - **The single most important scientific lesson to demonstrate is the generalization gap:** GenImage shows a ResNet-50 trained and tested within the Stable Diffusion V1.4/V1.5 subsets reaches 99.9% accuracy, yet the same ResNet-50 trained on SD V1.4 and tested on Midjourney drops to 54.9% (cross-generator average 66.9%); Ojha et al. report trained deep networks generalize at only ~53–58% on unseen generators. Building a cross-generator test (CIFAKE → GenImage/Synthbuster) and a robustness curve (JPEG/blur/noise) is worth more marks than chasing the last 1% of in-distribution accuracy.
 - **Frequency analysis is a project in itself:** diffusion images (CIFAKE) differ from real CIFAR-10 in the spectral domain, and this difference — plus reconstruction-based features (DIRE/DNF) and CLIP embeddings — is what powers two-stream and hybrid architectures.
@@ -23,6 +28,7 @@ CIFAKE (Bird & Lotfi, IEEE Access 2024; arXiv:2303.14126) pairs the 60,000 real 
 The original CNN: a sweep of **36 topologies** (filters {16,32,64,128} × {1,2,3} conv layers). Best accuracy 92.98% (2 conv × 128 filters); the selected lowest-loss model used **2 conv layers × 32 filters + dense layers + sigmoid output** (92.93%, BCE loss 0.18). The replication paper (arXiv:2412.00073) describes it as "two convolutional layers, each with 32 filters, followed by two linear (fully connected) layers." **Grad-CAM finding (verbatim): "the actual entity itself does not hold useful information for classification; instead, the model focuses on small visual imperfections in the background of the images."** Documented synthetic defects included text-like glitches, missing detail (a jet with no cockpit window), and anatomical errors.
 
 **The 32×32 challenge.** Most pretrained backbones expect 224×224. Two strategies:
+
 - **Upsample 32→224** (bilinear/bicubic/Lanczos). The edge-ViT paper used **Lanczos** resampling. Pro: reuse ImageNet weights directly. Con: upsampling can blur/introduce its own artifacts and destroy native high-frequency cues.
 - **Adapt the stem CIFAR-style**: replace the 7×7 stride-2 conv + maxpool of ResNet with a 3×3 stride-1 conv, no early downsampling, so the network keeps spatial resolution. Standard for CIFAR ResNets.
 
@@ -31,6 +37,7 @@ The original CNN: a sweep of **36 topologies** (filters {16,32,64,128} × {1,2,3
 This is where a strong, interpretable, low-compute baseline lives.
 
 **Handcrafted feature families (all implementable in OpenCV / scikit-image):**
+
 - **Color histograms / color statistics** — per-channel histograms, mean/var, CbCr chrominance (the CIFAKE paper itself flagged chrominance as promising).
 - **Texture: LBP (Local Binary Patterns)**, **GLCM (Gray-Level Co-occurrence Matrix)** → contrast/homogeneity/energy/correlation, **HOG (Histogram of Oriented Gradients)**.
 - **Frequency: 2D DCT / FFT spectra**, **azimuthal averaging of the power spectrum** (reduces the 2D spectrum to a 1D radial profile — the classic Frank et al. "Leveraging Frequency Analysis for Deep Fake Image Recognition" approach), **wavelet (Daubechies) subband energies**.
@@ -45,6 +52,7 @@ This is where a strong, interpretable, low-compute baseline lives.
 ### 3. Dataset Analysis & Frequency-Domain EDA
 
 What the team can extract directly from CIFAKE:
+
 - **EDA**: class balance, per-class mean images, pixel-intensity histograms, color-channel statistics real vs fake, saturation/brightness distributions.
 - **Frequency analysis**: average 2D FFT/DCT magnitude spectra for real vs fake; **azimuthally averaged (radial) power spectrum**. Key documented physics: **GAN images leave periodic "checkerboard" high-frequency spikes** (from transposed-conv upsampling), whereas **diffusion images lack those periodic spikes but show a broad, non-periodic deviation in the high-frequency band** — and diffusion models exhibit a *frequency bias*: they under-reproduce the finest high frequencies/details (Corvi et al. CVPR-W 2023, "Intriguing Properties of Synthetic Images"). FreqCross (arXiv:2507.02995) reports synthetic images show systematically elevated energy in the 0.1–0.4 normalized-frequency range.
 - **Spectral fingerprints**: each generator family inserts a characteristic spectral signature; diffusion images inherit spectral characteristics of their training data (arXiv:2503.11071).
@@ -57,6 +65,7 @@ This is a high-value, low-risk section and directly motivates the two-stream arc
 **Backbones**: ResNet50/ResNet50V2, EfficientNet-B0, ConvNeXt, DenseNet121, ViT-Base/DeiT/Swin. All available in **timm** and torchvision.
 
 **CIFAKE numbers** (note: some are same-protocol re-implementations from arXiv:2508.17877 Table 3, others standalone):
+
 - Fine-tuned **ResNet50V2 ~96.35%** (transfer-learning study).
 - **Edge-enhanced ViT + EBP 97.75% / F1 0.9777** (arXiv:2508.17877) — backbone `vit-base-patch16-224-in21k`, ~86M params.
 - MobileNet 90.10%, VGG16/InceptionV4 lower (SpringerLink pre-trained CNN study).
@@ -71,6 +80,7 @@ This is a high-value, low-risk section and directly motivates the two-stream arc
 ### 5. Image Encoding + Classification (Foundation-Model Embeddings)
 
 Extract embeddings from a **frozen** vision encoder, then train a lightweight classifier (linear probe / MLP / SVM).
+
 - **CLIP** (Ojha, Li & Lee, "Towards Universal Fake Image Detectors That Generalize Across Generative Models," CVPR 2023 / arXiv:2302.10174): nearest-neighbor or linear probe on frozen CLIP features generalizes across unseen generators. Verbatim: "it improves upon the SoTA by +15.07 mAP and +25.90% acc when tested on unseen diffusion and autoregressive models." They reach ~82% on unseen generators where trained deep networks manage only 53–58%.
 - **Cozzolino et al., "Raising the Bar…with CLIP"** (CVPR-W 2024 / arXiv:2312.00195): a few example images from one generator give a CLIP detector that generalizes to DALL·E 3, Midjourney v5, Firefly; +6% AUC OOD, +13% robustness. Code at grip-unina/ClipBased-SyntheticImageDetection.
 - **C2P-CLIP, RINE, FatFormer** inject category prompts / intermediate features / adapters.
@@ -124,6 +134,7 @@ graph LR
 ```
 
 **(d) Reconstruction-based.**
+
 - **DIRE (arXiv:2303.09295, ICCV 2023)**: invert the image with DDIM, reconstruct with a pretrained diffusion model; **diffusion-generated images reconstruct with lower error** than real ones → DIRE map → binary classifier. Robust to blur/JPEG; generalizes across diffusion models. Heavy (≈40 diffusion calls). Introduced the **DiffusionForensics** dataset.
 - **DNF (Diffusion Noise Feature, arXiv:2312.02625)**: collect estimated noise across inverse diffusion steps; amplifies high-frequency fingerprints; a ResNet on DNF reaches SoTA. Independent testing confirms strong in-distribution but weaker OOD generalization.
 - **DistilDIRE (arXiv:2406.00856)** distills DIRE for speed.
@@ -133,6 +144,7 @@ These are described for completeness; at 32×32 they require a diffusion model o
 ### 8. Custom Architectures From Scratch (32×32)
 
 **(A) Original CIFAKE CNN (reproduce as baseline):**
+
 ```mermaid
 graph LR
     A[32x32x3] --> B[Conv 3x3, 32, ReLU]
@@ -142,9 +154,11 @@ graph LR
     E --> F[Dense + ReLU]
     F --> G[Sigmoid -> Real/Fake]
 ```
+
 ~92.98% accuracy; trains in minutes.
 
 **(B) Improved residual CNN (recommended custom model):**
+
 ```mermaid
 graph TD
     A[32x32x3] --> B[Conv 3x3 stride1, 64, BN, ReLU]
@@ -156,6 +170,7 @@ graph TD
     G --> H[Dropout 0.3]
     H --> I[FC -> Sigmoid]
 ```
+
 CIFAR-style stem (3×3 stride-1, no early maxpool) preserves the high-frequency artifacts; residual blocks + an attention module (SE/CBAM) + GAP. Expect mid-90s% with light augmentation.
 
 **(C) Dual-branch spatial/frequency CNN from scratch** (mirrors FreqCross but small): one branch on RGB, one on the per-image FFT magnitude, concatenate → FC. The dual-input model in arXiv:2406.13688 (RGB + DFT) reaches ~94%.
@@ -208,6 +223,7 @@ For cross-generator generalization, **GenImage** (its SD V1.4 subset pairs natur
 **Stack**: PyTorch; **timm** (backbones); **Hugging Face transformers + peft** (ViT + LoRA); **open_clip** (CLIP); **OpenCV + scikit-image** (handcrafted/frequency); **scikit-learn + lightgbm/xgboost** (classical); **matplotlib/seaborn** (viz); **pytorch-grad-cam** (explainability). A single mid-range GPU (8–12 GB) is sufficient at 32×32; classical baselines run on CPU.
 
 **Suggested scope & division of labour (3 people, ~4–6 weeks):**
+
 - **Person A — Classical & EDA**: dataset EDA, frequency analysis (FFT/DCT, azimuthal power spectrum), handcrafted features (HOG/LBP/GLCM/DCT/wavelets) + LightGBM/SVM; reproduce ~F1 0.94 and the spectral real-vs-fake story.
 - **Person B — Deep models**: reproduce CIFAKE CNN from scratch, train the improved residual/dual-branch CNN, fine-tune ResNet50V2/EfficientNet and a ViT (with **LoRA** for the efficiency story). Target 96–98%.
 - **Person C — Foundation models, generalization & robustness**: CLIP/DINOv2 linear probe; cross-generator eval (GenImage/Synthbuster); robustness curves (JPEG/blur/noise); adversarial/LoRA-attack mini-study; explainability (Grad-CAM, attention rollout).
