@@ -12,6 +12,12 @@ results/
 *.npy
 *.npz
 
+# ---- Commit per-pipeline trained checkpoints (the shareable model deliverables) ----
+# These are intentionally small (trained part only; frozen backbones are re-downloaded).
+!notebooks/artifacts/**/models/
+!notebooks/artifacts/**/models/*.pt
+!notebooks/artifacts/**/models/*.pth
+
 # ---- Python ----
 __pycache__/
 *.py[cod]
