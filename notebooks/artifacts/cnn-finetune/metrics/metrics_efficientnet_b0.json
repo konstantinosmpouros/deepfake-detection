@@ -1,0 +1,111 @@
+{
+  "pipeline": "cnn-finetune",
+  "backbone": "efficientnet_b0",
+  "created": "2026-06-18T08:52:04+00:00",
+  "working_size": 224,
+  "normalization": "imagenet",
+  "dataset": {
+    "in_distribution": "ai-real-images",
+    "ood": "tiny-genimage"
+  },
+  "threshold_default": 0.5,
+  "threshold_tuned": 0.1796875,
+  "in_distribution": {
+    "at_0.5": {
+      "threshold": 0.5,
+      "n": 11963,
+      "n_fake": 5977,
+      "n_real": 5986,
+      "accuracy": 0.9573685530385355,
+      "f1_macro": 0.957362115051209,
+      "precision": 0.9681452303476623,
+      "recall": 0.9457922034465451,
+      "auc_roc": 0.9901094299503482,
+      "pr_auc": 0.9900516059063407,
+      "mcc": 0.9149791303572608,
+      "brier": 0.03420888405364031,
+      "confusion_matrix": [
+        [
+          5800,
+          186
+        ],
+        [
+          324,
+          5653
+        ]
+      ]
+    },
+    "at_tuned": {
+      "threshold": 0.1796875,
+      "n": 11963,
+      "n_fake": 5977,
+      "n_real": 5986,
+      "accuracy": 0.9573685530385355,
+      "f1_macro": 0.9573655140884093,
+      "precision": 0.9490717923443404,
+      "recall": 0.9665383971892254,
+      "auc_roc": 0.9901094299503482,
+      "pr_auc": 0.9900516059063407,
+      "mcc": 0.9148929517976317,
+      "brier": 0.03420888405364031,
+      "confusion_matrix": [
+        [
+          5676,
+          310
+        ],
+        [
+          200,
+          5777
+        ]
+      ]
+    }
+  },
+  "ood": {
+    "overall_accuracy": 0.5645179724555689,
+    "per_generator": {
+      "adm": {
+        "accuracy": 0.5562,
+        "n": 5000
+      },
+      "biggan": {
+        "accuracy": 0.4388,
+        "n": 5000
+      },
+      "glide": {
+        "accuracy": 0.556,
+        "n": 5000
+      },
+      "midjourney": {
+        "accuracy": 0.7631526305261053,
+        "n": 4999
+      },
+      "sdv5": {
+        "accuracy": 0.5929185837167433,
+        "n": 4999
+      },
+      "vqdm": {
+        "accuracy": 0.3994,
+        "n": 5000
+      },
+      "wukong": {
+        "accuracy": 0.6452,
+        "n": 5000
+      }
+    },
+    "preview": true
+  },
+  "train_history": {
+    "epochs": 15,
+    "stage1_epochs": 3,
+    "best_epoch": 15,
+    "best_val_auc": 0.9886276540670554
+  },
+  "figures": {
+    "training_curves": "figures/training_curves_efficientnet_b0.png",
+    "confusion": "figures/confusion_efficientnet_b0.png",
+    "roc_pr": "figures/roc_pr_efficientnet_b0.png",
+    "reliability": "figures/reliability_efficientnet_b0.png",
+    "ood_per_generator": "figures/ood_per_generator_efficientnet_b0.png",
+    "gradcam": "figures/gradcam_efficientnet_b0.png"
+  }
+}
