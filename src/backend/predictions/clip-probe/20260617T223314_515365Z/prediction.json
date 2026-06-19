@@ -1,0 +1,18 @@
+{
+  "pipeline": "clip-probe",
+  "key": "clip-probe",
+  "timestamp": "2026-06-17T22:33:14+00:00",
+  "image": "0-02-05-44cd7b8fe261832baf4d14d8345f64812af7a2d38a718a2be81353dca804f8d9_fdd7bf6845b12beb.jpg",
+  "final": {
+    "label": "fake",
+    "p_fake": 0.956387
+  },
+  "components": [
+    {
+      "name": "model",
+      "label": "fake",
+      "p_fake": 0.956387
+    }
+  ],
+  "saved_to": "C:\\Users\\user\\Desktop\\MSc - AI\\\u0395\u03be\u03ac\u03bc\u03b7\u03bd\u03bf 2\u03bf\\\u0392\u03b1\u03b8\u03b9\u03ac \u039c\u03ac\u03b8\u03b7\u03c3\u03b7\\deepfake-detection\\src\\backend\\predictions\\clip-probe\\20260617T223314_515365Z"
+}

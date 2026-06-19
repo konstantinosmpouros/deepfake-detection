@@ -1,0 +1,23 @@
+{
+  "pipeline": "two-stream",
+  "key": "two-stream",
+  "timestamp": "2026-06-17T21:52:26+00:00",
+  "image": "0-02-05-8d761e67e763aba39e43c6aadec36e5663684339c61600a42ee3ef65556d34a2_4971e73bd6a1e51a.jpg",
+  "final": {
+    "label": "fake",
+    "p_fake": 0.835579
+  },
+  "components": [
+    {
+      "name": "spatial",
+      "label": "fake",
+      "p_fake": 0.877949
+    },
+    {
+      "name": "frequency",
+      "label": "real",
+      "p_fake": 0.221231
+    }
+  ],
+  "saved_to": "C:\\Users\\user\\Desktop\\MSc - AI\\\u0395\u03be\u03ac\u03bc\u03b7\u03bd\u03bf 2\u03bf\\\u0392\u03b1\u03b8\u03b9\u03ac \u039c\u03ac\u03b8\u03b7\u03c3\u03b7\\deepfake-detection\\src\\backend\\predictions\\two-stream\\20260617T215226_535151Z"
+}

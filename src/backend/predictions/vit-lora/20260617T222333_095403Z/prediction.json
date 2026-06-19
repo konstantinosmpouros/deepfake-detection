@@ -1,0 +1,18 @@
+{
+  "pipeline": "vit-lora",
+  "key": "vit-lora",
+  "timestamp": "2026-06-17T22:23:33+00:00",
+  "image": "0-02-05-7bcaef26b9fe2c5f824f924a97b56bea3815381ddbac61eab4310823c29e87bc_ffd88c7bdbd71be9.jpg",
+  "final": {
+    "label": "real",
+    "p_fake": 0.056134
+  },
+  "components": [
+    {
+      "name": "model",
+      "label": "real",
+      "p_fake": 0.056134
+    }
+  ],
+  "saved_to": "C:\\Users\\user\\Desktop\\MSc - AI\\\u0395\u03be\u03ac\u03bc\u03b7\u03bd\u03bf 2\u03bf\\\u0392\u03b1\u03b8\u03b9\u03ac \u039c\u03ac\u03b8\u03b7\u03c3\u03b7\\deepfake-detection\\src\\backend\\predictions\\vit-lora\\20260617T222333_095403Z"
+}
