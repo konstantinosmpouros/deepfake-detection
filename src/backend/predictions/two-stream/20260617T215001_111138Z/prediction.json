@@ -1,0 +1,23 @@
+{
+  "pipeline": "two-stream",
+  "key": "two-stream",
+  "timestamp": "2026-06-17T21:50:01+00:00",
+  "image": "Red Dead Redemption 2 Screenshot 2025.02.24 - 22.56.35.12.png",
+  "final": {
+    "label": "fake",
+    "p_fake": 0.888554
+  },
+  "components": [
+    {
+      "name": "spatial",
+      "label": "fake",
+      "p_fake": 0.877145
+    },
+    {
+      "name": "frequency",
+      "label": "real",
+      "p_fake": 0.370533
+    }
+  ],
+  "saved_to": "C:\\Users\\user\\Desktop\\MSc - AI\\\u0395\u03be\u03ac\u03bc\u03b7\u03bd\u03bf 2\u03bf\\\u0392\u03b1\u03b8\u03b9\u03ac \u039c\u03ac\u03b8\u03b7\u03c3\u03b7\\deepfake-detection\\src\\backend\\predictions\\two-stream\\20260617T215001_111138Z"
+}
