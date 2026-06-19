@@ -2,6 +2,10 @@
 data/
 models/
 results/
+
+# ---- App runtime: persisted inference outputs (uploads + prediction.json) ----
+src/backend/predictions/
+
 *.pt
 *.pth
 *.ckpt
