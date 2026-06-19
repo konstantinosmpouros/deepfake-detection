@@ -1,6 +1,6 @@
 {
   "pipeline": "vit-lora",
-  "created": "2026-06-17T20:15:32+00:00",
+  "created": "2026-06-19T06:02:40+00:00",
   "working_size": 224,
   "normalization": "imagenet",
   "dataset": {
@@ -8,95 +8,157 @@
     "ood": "tiny-genimage"
   },
   "threshold_default": 0.5,
-  "threshold_tuned": 0.625,
+  "threshold_tuned": 0.484375,
   "in_distribution": {
     "at_0.5": {
       "threshold": 0.5,
       "n": 11963,
       "n_fake": 5977,
       "n_real": 5986,
-      "accuracy": 0.9730000835910725,
-      "f1_macro": 0.9730000767992735,
-      "precision": 0.9717957276368492,
-      "recall": 0.9742345658357036,
-      "auc_roc": 0.9945711679826684,
-      "pr_auc": 0.9926564088035563,
-      "mcc": 0.9460032130677162,
-      "brier": 0.021928238993772026,
+      "accuracy": 0.978182730084427,
+      "f1_macro": 0.9781827081319703,
+      "precision": 0.9784064278540342,
+      "recall": 0.9779153421448887,
+      "auc_roc": 0.9972440714240316,
+      "pr_auc": 0.996941632215009,
+      "mcc": 0.9563655392945494,
+      "brier": 0.0172290241747408,
       "confusion_matrix": [
         [
-          5817,
-          169
+          5857,
+          129
         ],
         [
-          154,
-          5823
+          132,
+          5845
         ]
       ]
     },
     "at_tuned": {
-      "threshold": 0.625,
+      "threshold": 0.484375,
       "n": 11963,
       "n_fake": 5977,
       "n_real": 5986,
-      "accuracy": 0.9727493103736521,
-      "f1_macro": 0.9727491502351213,
-      "precision": 0.97431593083767,
-      "recall": 0.9710557135686799,
-      "auc_roc": 0.9945711679826684,
-      "pr_auc": 0.9926564088035563,
-      "mcc": 0.9455037381908331,
-      "brier": 0.021928238993772026,
+      "accuracy": 0.9780991390119536,
+      "f1_macro": 0.978099138858922,
+      "precision": 0.9774436090225563,
+      "recall": 0.9787518822151581,
+      "auc_roc": 0.9972440714240316,
+      "pr_auc": 0.996941632215009,
+      "mcc": 0.9561991525260353,
+      "brier": 0.0172290241747408,
       "confusion_matrix": [
         [
-          5833,
-          153
+          5851,
+          135
         ],
         [
-          173,
-          5804
+          127,
+          5850
         ]
       ]
     }
   },
   "ood": {
-    "overall_accuracy": 0.5996914109377679,
+    "overall_accuracy": 0.6021772672724156,
     "per_generator": {
       "adm": {
-        "accuracy": 0.7434,
+        "accuracy": 0.6484,
         "n": 5000
       },
       "biggan": {
-        "accuracy": 0.435,
+        "accuracy": 0.4582,
         "n": 5000
       },
       "glide": {
-        "accuracy": 0.5304,
+        "accuracy": 0.5656,
         "n": 5000
       },
       "midjourney": {
-        "accuracy": 0.7943588717743548,
+        "accuracy": 0.790758151630326,
         "n": 4999
       },
       "sdv5": {
-        "accuracy": 0.6225245049009802,
+        "accuracy": 0.6405281056211243,
         "n": 4999
       },
       "vqdm": {
-        "accuracy": 0.4104,
+        "accuracy": 0.4258,
         "n": 5000
       },
       "wukong": {
-        "accuracy": 0.6618,
+        "accuracy": 0.686,
         "n": 5000
       }
     },
     "preview": true
   },
-  "train_history": {
-    "epochs": 12,
-    "best_epoch": 8,
-    "best_val_auc": 0.9945700190147316
+  "tuning": {
+    "tuned": true,
+    "search_space": {
+      "r": {
+        "type": "categorical",
+        "choices": [
+          4,
+          8,
+          16,
+          32
+        ]
+      },
+      "lora_alpha": {
+        "type": "categorical",
+        "choices": [
+          8,
+          16,
+          32
+        ]
+      },
+      "lora_dropout": {
+        "type": "float",
+        "low": 0.0,
+        "high": 0.2
+      },
+      "p_drop": {
+        "type": "float",
+        "low": 0.0,
+        "high": 0.3
+      },
+      "lr": {
+        "type": "loguniform",
+        "low": 0.0003,
+        "high": 0.002
+      },
+      "weight_decay": {
+        "type": "loguniform",
+        "low": 1e-05,
+        "high": 0.001
+      },
+      "label_smooth": {
+        "type": "float",
+        "low": 0.0,
+        "high": 0.1
+      },
+      "loss": {
+        "type": "categorical",
+        "choices": [
+          "bce",
+          "focal"
+        ]
+      }
+    },
+    "n_trials": 12,
+    "best_val_auc": 0.9965909003813397,
+    "best_params": {
+      "r": 32,
+      "lora_alpha": 32,
+      "lora_dropout": 0.027898772130408367,
+      "p_drop": 0.08764339456056544,
+      "lr": 0.0006011321832885781,
+      "weight_decay": 8.168455894760161e-05,
+      "label_smooth": 0.07851759613930137,
+      "loss": "focal",
+      "focal_gamma": 2.184829137724085
+    }
   },
   "figures": {
     "training_curves": "figures/training_curves.png",

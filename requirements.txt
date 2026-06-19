@@ -29,6 +29,9 @@ seaborn
 # Explainability
 grad-cam
 
+# Hyperparameter search
+optuna
+
 # Notebooks & utilities
 jupyter
 tqdm

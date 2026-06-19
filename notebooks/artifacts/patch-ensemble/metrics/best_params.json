@@ -1,0 +1,10 @@
+{
+  "backbone": "efficientnet_b0",
+  "K": 6,
+  "mil_hidden": 256,
+  "p_drop": 0.15579754426081674,
+  "lr": 0.00019594972058679176,
+  "weight_decay": 5.4041038546473305e-05,
+  "loss": "focal",
+  "focal_gamma": 1.3993475643167195
+}

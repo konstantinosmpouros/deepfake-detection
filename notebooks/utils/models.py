@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 def count_params(model: nn.Module, trainable_only: bool = False) -> int:
@@ -197,18 +198,22 @@ def build_vit_lora(model_name: str = "vit_base_patch16_224.augreg_in21k",
 # ---- clip-probe (trained neural head on frozen embeddings) -----------------
 
 class _MLPHead(nn.Module):
-    def __init__(self, in_dim, hidden=256, p_drop=0.3):
+    def __init__(self, in_dim, hidden=256, n_layers=1, p_drop=0.3):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(in_dim, hidden), nn.ReLU(inplace=True),
-                                 nn.Dropout(p_drop), nn.Linear(hidden, 1))
+        layers, d = [], in_dim
+        for _ in range(max(1, n_layers)):
+            layers += [nn.Linear(d, hidden), nn.ReLU(inplace=True), nn.Dropout(p_drop)]
+            d = hidden
+        layers.append(nn.Linear(d, 1))
+        self.net = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.net(x).squeeze(1)
 
 
-def build_mlp_head(in_dim: int, hidden: int = 256, p_drop: float = 0.3) -> nn.Module:
+def build_mlp_head(in_dim: int, hidden: int = 256, n_layers: int = 1, p_drop: float = 0.3) -> nn.Module:
     """Small MLP classifier head for frozen CLIP/DINOv2 embeddings. forward -> (B,)."""
-    return _MLPHead(in_dim, hidden, p_drop)
+    return _MLPHead(in_dim, hidden, n_layers, p_drop)
 
 
 # ---- two-stream (RGB + frequency fusion) -----------------------------------
@@ -303,3 +308,215 @@ def build_discriminative_param_groups(model, backbone: str, head_lr: float = 1e-
         groups.append({"params": params, "lr": head_lr * (decay ** g),
                        "weight_decay": 0.0 if no_decay else weight_decay})
     return groups
+
+
+# ============================================================================
+# Extra research architectures (notebooks 12-15). All deep-learning; designed
+# for a single 12 GB GPU. Each keeps a single-logit output convention.
+# ============================================================================
+
+_LUMA = (0.299, 0.587, 0.114)
+
+
+def _luma_logfft(x):
+    """Per-sample log-magnitude 2D FFT of luminance -> (B,1,H,W), float32, autocast-safe."""
+    with torch.autocast(device_type=x.device.type, enabled=False):
+        w = torch.tensor(_LUMA, device=x.device, dtype=torch.float32).view(1, 3, 1, 1)
+        gray = (x.float() * w).sum(1, keepdim=True)
+        f = torch.fft.fftshift(torch.fft.fft2(gray), dim=(-2, -1))
+        mag = torch.log1p(f.abs())
+        mu = mag.mean(dim=(-2, -1), keepdim=True)
+        sd = mag.std(dim=(-2, -1), keepdim=True) + 1e-5
+        return (mag - mu) / sd
+
+
+# ---- A. freqcross : RGB + FFT + radial-spectrum, attention fusion ----------
+
+class _RadialProfile(nn.Module):
+    """Azimuthally-averaged log-power spectrum of luminance -> (B, n_bins). Differentiable."""
+
+    def __init__(self, size: int = 128, n_bins: int = 64):
+        super().__init__()
+        self.n_bins = n_bins
+        yy, xx = torch.meshgrid(torch.arange(size), torch.arange(size), indexing="ij")
+        cy = cx = size // 2
+        r = torch.sqrt((yy - cy).float() ** 2 + (xx - cx).float() ** 2)
+        idx = (r / (r.max() + 1e-8) * (n_bins - 1)).round().long().clamp(0, n_bins - 1)
+        self.register_buffer("idx", idx.reshape(-1))
+        counts = torch.bincount(self.idx, minlength=n_bins).float().clamp(min=1)
+        self.register_buffer("counts", counts)
+
+    def forward(self, x):
+        with torch.autocast(device_type=x.device.type, enabled=False):
+            mag = _luma_logfft(x).reshape(x.size(0), -1)          # (B, H*W)
+            out = torch.zeros(x.size(0), self.n_bins, device=x.device)
+            out.index_add_(1, self.idx, mag)                      # sum per radial bin
+            out = out / self.counts                               # mean per bin
+            return (out - out.mean(1, keepdim=True)) / (out.std(1, keepdim=True) + 1e-5)
+
+
+class FreqCross(nn.Module):
+    """Three branches (spatial RGB / FFT magnitude / radial power) fused by attention.
+
+    `forward_all(x)` -> (fused, spatial, frequency, radial) logits, so each branch
+    gets an auxiliary loss and the app can report a per-component p_fake.
+    """
+
+    def __init__(self, size: int = 128, feat: int = 256, n_radial: int = 64, p_drop: float = 0.3):
+        super().__init__()
+        self.spatial = _FeatCNN(3, feat=feat)
+        self.freq = _FeatCNN(1, feat=feat)
+        self.radial = _RadialProfile(size=size, n_bins=n_radial)
+        d = self.spatial.out_dim
+        self.radial_mlp = nn.Sequential(nn.Linear(n_radial, 128), nn.ReLU(inplace=True),
+                                        nn.Dropout(p_drop), nn.Linear(128, d))
+        self.spatial_head = nn.Linear(d, 1)
+        self.freq_head = nn.Linear(d, 1)
+        self.radial_head = nn.Linear(d, 1)
+        self.attn = nn.Linear(d, 1)                               # gating score per branch
+        self.drop = nn.Dropout(p_drop)
+        self.fusion_head = nn.Linear(d, 1)
+
+    def forward_all(self, x):
+        s = self.spatial(x)
+        fr = self.freq(_luma_logfft(x))
+        rd = self.radial_mlp(self.radial(x))
+        feats = torch.stack([s, fr, rd], dim=1)                   # (B,3,d)
+        w = torch.softmax(self.attn(feats), dim=1)                # (B,3,1)
+        fused = (w * feats).sum(1)                                # (B,d)
+        return (self.fusion_head(self.drop(fused)).squeeze(1),
+                self.spatial_head(s).squeeze(1),
+                self.freq_head(fr).squeeze(1),
+                self.radial_head(rd).squeeze(1))
+
+    def forward(self, x):
+        return self.forward_all(x)[0]
+
+    def attention_weights(self, x):
+        """Return the (B,3) fusion attention weights [spatial, frequency, radial]."""
+        s, fr, rd = self.spatial(x), self.freq(_luma_logfft(x)), self.radial_mlp(self.radial(x))
+        feats = torch.stack([s, fr, rd], dim=1)
+        return torch.softmax(self.attn(feats), dim=1).squeeze(-1)
+
+
+def build_freqcross(size: int = 128, feat: int = 256, n_radial: int = 64, p_drop: float = 0.3) -> nn.Module:
+    return FreqCross(size=size, feat=feat, n_radial=n_radial, p_drop=p_drop)
+
+
+# ---- B. srm-noise : forensic noise-residual front-end + CNN ----------------
+
+# Three standard SRM high-pass kernels (Fridrich/Zhou) + learnable Bayar constrained conv.
+_SRM_KERNELS = [
+    [[0, 0, 0, 0, 0], [0, -1, 2, -1, 0], [0, 2, -4, 2, 0], [0, -1, 2, -1, 0], [0, 0, 0, 0, 0]],
+    [[-1, 2, -2, 2, -1], [2, -6, 8, -6, 2], [-2, 8, -12, 8, -2], [2, -6, 8, -6, 2], [-1, 2, -2, 2, -1]],
+    [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 1, -2, 1, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
+]
+_SRM_NORM = [4.0, 12.0, 2.0]
+
+
+class _SRM(nn.Module):
+    """Fixed SRM high-pass residuals: 3 kernels summed across RGB -> (B,3,H,W)."""
+
+    def __init__(self):
+        super().__init__()
+        k = torch.tensor([[[row for row in ker]] for ker in _SRM_KERNELS], dtype=torch.float32)  # (3,1,5,5)
+        k = k / torch.tensor(_SRM_NORM).view(3, 1, 1, 1)
+        w = k.repeat(1, 3, 1, 1)                                  # (3,3,5,5) shared across input channels
+        self.register_buffer("weight", w)
+
+    def forward(self, x):
+        with torch.autocast(device_type=x.device.type, enabled=False):
+            return F.conv2d(x.float(), self.weight, padding=2)
+
+
+class _BayarConv(nn.Module):
+    """Bayar-Stamm constrained conv: per-filter center = -1, remaining weights sum to +1."""
+
+    def __init__(self, in_ch: int = 3, out_ch: int = 3, k: int = 5):
+        super().__init__()
+        self.k = k
+        self.conv = nn.Conv2d(in_ch, out_ch, k, padding=k // 2, bias=False)
+
+    def _constrain(self):
+        with torch.no_grad():
+            w = self.conv.weight.data
+            c = self.k // 2
+            w[:, :, c, c] = 0.0
+            w /= (w.sum(dim=(2, 3), keepdim=True) + 1e-8)
+            w[:, :, c, c] = -1.0
+
+    def forward(self, x):
+        self._constrain()
+        return self.conv(x)
+
+
+class SRMNet(nn.Module):
+    """Forensic residual detector: [SRM(3) ‖ Bayar(bayar_ch)] -> residual -> CNN -> logit."""
+
+    def __init__(self, feat: int = 256, bayar_ch: int = 3, p_drop: float = 0.3):
+        super().__init__()
+        self.srm = _SRM()
+        self.bayar = _BayarConv(3, bayar_ch, 5)
+        self.body = _FeatCNN(3 + bayar_ch, feat=feat)
+        self.drop = nn.Dropout(p_drop)
+        self.head = nn.Linear(self.body.out_dim, 1)
+
+    def residual(self, x):
+        return torch.cat([self.srm(x), self.bayar(x)], dim=1)     # (B, 3+bayar_ch, H, W)
+
+    def forward(self, x):
+        f = self.body(self.residual(x))
+        return self.head(self.drop(f)).squeeze(1)
+
+
+def build_srm_cnn(feat: int = 256, bayar_ch: int = 3, p_drop: float = 0.3) -> nn.Module:
+    return SRMNet(feat=feat, bayar_ch=bayar_ch, p_drop=p_drop)
+
+
+# ---- C. patch-ensemble : per-patch backbone + gated-attention MIL pooling --
+
+class _AttnMIL(nn.Module):
+    """Gated-attention pooling (Ilse et al. 2018) over K patch features -> (B,d) + weights."""
+
+    def __init__(self, d: int, hidden: int = 128):
+        super().__init__()
+        self.V = nn.Linear(d, hidden)
+        self.U = nn.Linear(d, hidden)
+        self.w = nn.Linear(hidden, 1)
+
+    def forward(self, feats):                                     # (B,K,d)
+        a = torch.tanh(self.V(feats)) * torch.sigmoid(self.U(feats))
+        a = torch.softmax(self.w(a), dim=1)                       # (B,K,1)
+        return (a * feats).sum(1), a.squeeze(-1)                  # (B,d), (B,K)
+
+
+class PatchEnsemble(nn.Module):
+    """Score K native-resolution patches with a shared backbone, attention-pool to one logit."""
+
+    def __init__(self, backbone: str = "efficientnet_b0", pretrained: bool = True,
+                 mil_hidden: int = 128, p_drop: float = 0.3):
+        super().__init__()
+        import timm
+        self.encoder = timm.create_model(backbone, pretrained=pretrained, num_classes=0, global_pool="avg")
+        d = self.encoder.num_features
+        self.mil = _AttnMIL(d, hidden=mil_hidden)
+        self.drop = nn.Dropout(p_drop)
+        self.head = nn.Linear(d, 1)
+
+    def _pool(self, x):                                           # x: (B,K,3,H,W)
+        b, k = x.shape[:2]
+        feats = self.encoder(x.flatten(0, 1)).view(b, k, -1)
+        return self.mil(feats)
+
+    def forward(self, x):
+        pooled, _ = self._pool(x)
+        return self.head(self.drop(pooled)).squeeze(1)
+
+    def forward_attn(self, x):
+        pooled, attn = self._pool(x)
+        return self.head(self.drop(pooled)).squeeze(1), attn      # logit, (B,K) patch weights
+
+
+def build_patch_ensemble(backbone: str = "efficientnet_b0", pretrained: bool = True,
+                         mil_hidden: int = 128, p_drop: float = 0.3) -> nn.Module:
+    return PatchEnsemble(backbone=backbone, pretrained=pretrained, mil_hidden=mil_hidden, p_drop=p_drop)

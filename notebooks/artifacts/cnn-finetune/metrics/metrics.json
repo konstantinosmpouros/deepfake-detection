@@ -1,0 +1,161 @@
+{
+  "pipeline": "cnn-finetune",
+  "created": "2026-06-19T01:18:12+00:00",
+  "working_size": 224,
+  "normalization": "imagenet",
+  "dataset": {
+    "in_distribution": "ai-real-images",
+    "ood": "tiny-genimage"
+  },
+  "threshold_default": 0.5,
+  "threshold_tuned": 0.58203125,
+  "in_distribution": {
+    "at_0.5": {
+      "threshold": 0.5,
+      "n": 11963,
+      "n_fake": 5977,
+      "n_real": 5986,
+      "accuracy": 0.9559475048064867,
+      "f1_macro": 0.955939425018149,
+      "precision": 0.9432335718932986,
+      "recall": 0.9702191734984106,
+      "auc_roc": 0.9930448806402938,
+      "pr_auc": 0.9935699455795233,
+      "mcc": 0.9122697060674994,
+      "brier": 0.03569262469321257,
+      "confusion_matrix": [
+        [
+          5637,
+          349
+        ],
+        [
+          178,
+          5799
+        ]
+      ]
+    },
+    "at_tuned": {
+      "threshold": 0.58203125,
+      "n": 11963,
+      "n_fake": 5977,
+      "n_real": 5986,
+      "accuracy": 0.9585388280531639,
+      "f1_macro": 0.9585387790923549,
+      "precision": 0.9588146659969864,
+      "recall": 0.9581729964865318,
+      "auc_roc": 0.9930448806402938,
+      "pr_auc": 0.9935699455795233,
+      "mcc": 0.9170777725134999,
+      "brier": 0.03569262469321257,
+      "confusion_matrix": [
+        [
+          5740,
+          246
+        ],
+        [
+          250,
+          5727
+        ]
+      ]
+    }
+  },
+  "ood": {
+    "overall_accuracy": 0.5636322075547174,
+    "per_generator": {
+      "adm": {
+        "accuracy": 0.5988,
+        "n": 5000
+      },
+      "biggan": {
+        "accuracy": 0.4364,
+        "n": 5000
+      },
+      "glide": {
+        "accuracy": 0.5604,
+        "n": 5000
+      },
+      "midjourney": {
+        "accuracy": 0.739747949589918,
+        "n": 4999
+      },
+      "sdv5": {
+        "accuracy": 0.6091218243648729,
+        "n": 4999
+      },
+      "vqdm": {
+        "accuracy": 0.358,
+        "n": 5000
+      },
+      "wukong": {
+        "accuracy": 0.643,
+        "n": 5000
+      }
+    },
+    "preview": true
+  },
+  "tuning": {
+    "tuned": true,
+    "search_space": {
+      "backbone": {
+        "type": "categorical",
+        "choices": [
+          "efficientnet_b0",
+          "resnet50"
+        ]
+      },
+      "p_drop": {
+        "type": "float",
+        "low": 0.1,
+        "high": 0.5
+      },
+      "head_lr": {
+        "type": "loguniform",
+        "low": 0.0003,
+        "high": 0.003
+      },
+      "disc_decay": {
+        "type": "float",
+        "low": 0.2,
+        "high": 0.5
+      },
+      "weight_decay": {
+        "type": "loguniform",
+        "low": 1e-05,
+        "high": 0.001
+      },
+      "label_smooth": {
+        "type": "float",
+        "low": 0.0,
+        "high": 0.1
+      },
+      "loss": {
+        "type": "categorical",
+        "choices": [
+          "bce",
+          "focal"
+        ]
+      }
+    },
+    "n_trials": 12,
+    "best_val_auc": 0.9921780228998964,
+    "best_params": {
+      "backbone": "efficientnet_b0",
+      "p_drop": 0.4730073038926608,
+      "head_lr": 0.0014316113516618027,
+      "disc_decay": 0.3336613993697719,
+      "weight_decay": 1.0692354501518688e-05,
+      "label_smooth": 0.060089817896396655,
+      "loss": "focal",
+      "focal_gamma": 2.9407547475576137
+    }
+  },
+  "backbone": "efficientnet_b0",
+  "figures": {
+    "training_curves": "figures/training_curves.png",
+    "confusion": "figures/confusion.png",
+    "roc_pr": "figures/roc_pr.png",
+    "reliability": "figures/reliability.png",
+    "ood_per_generator": "figures/ood_per_generator.png",
+    "gradcam": "figures/gradcam.png"
+  }
+}

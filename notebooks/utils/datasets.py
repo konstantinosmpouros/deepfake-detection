@@ -221,3 +221,83 @@ def make_ood_loader(tiny_manifest_path, working_size: int, batch_size: int,
     ds = DeepfakeDataset(df, eval_tf, source="files")
     loader = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False, **_dl_kwargs(num_workers))
     return loader, df
+
+
+# ---- Patch-bag dataset (for the patch-ensemble pipeline, notebook 14) -------
+# This pipeline deliberately works at NATIVE resolution (not the 256 cache), so
+# the high-frequency generative artifacts that resizing destroys are preserved.
+# Each item is a bag of K patches (multiple-instance learning).
+
+class PatchBagDataset(Dataset):
+    """Return (K, 3, patch, patch) float tensor + label, read from the original file.
+
+    train=True  -> K random native-resolution crops (small images upscaled to fit).
+    train=False -> K deterministic corner crops (center added when K==5).
+    """
+
+    def __init__(self, df: pd.DataFrame, patch: int = 224, k: int = 4, train: bool = True,
+                 mean=IMAGENET_MEAN, std=IMAGENET_STD, label_col: str = "label"):
+        self.files = df["filepath"].tolist()
+        self.labels = df[label_col].map(LABEL_TO_INT).to_numpy(dtype=np.float32)
+        self.patch, self.k, self.train = patch, k, train
+        self.mean = torch.tensor(list(mean)).view(3, 1, 1)
+        self.std = torch.tensor(list(std)).view(3, 1, 1)
+
+    def __len__(self) -> int:
+        return len(self.files)
+
+    def _norm(self, pil_patch) -> torch.Tensor:
+        arr = np.array(pil_patch, dtype=np.uint8)
+        t = torch.from_numpy(arr).permute(2, 0, 1).float() / 255.0
+        return (t - self.mean) / self.std
+
+    def _crops(self, img):
+        p = self.patch
+        w, h = img.size
+        if min(w, h) < p:                                         # upscale small images to fit
+            short = min(w, h)
+            nw, nh = round(w * p / short), round(h * p / short)
+            img = img.resize((nw, nh), Image.Resampling.BILINEAR)
+            w, h = nw, nh
+        if self.train:
+            out = []
+            for _ in range(self.k):
+                left = int(torch.randint(0, w - p + 1, (1,)).item())
+                top = int(torch.randint(0, h - p + 1, (1,)).item())
+                out.append(img.crop((left, top, left + p, top + p)))
+            return out
+        coords = [(0, 0), (w - p, 0), (0, h - p), (w - p, h - p)]
+        if self.k == 5:
+            coords.append(((w - p) // 2, (h - p) // 2))
+        return [img.crop((l, t, l + p, t + p)) for (l, t) in coords[:self.k]]
+
+    def __getitem__(self, i):
+        img = Image.open(self.files[i]).convert("RGB")
+        x = torch.stack([self._norm(c) for c in self._crops(img)])  # (K,3,p,p)
+        return x, self.labels[i]
+
+
+def make_patch_loaders(manifest_split_path, patch: int = 224, k: int = 4, batch_size: int = 16,
+                       num_workers: int = 4, mean=IMAGENET_MEAN, std=IMAGENET_STD) -> dict:
+    """train/val/test bag-of-patch loaders from manifest_split.csv (reads original files)."""
+    df = pd.read_csv(manifest_split_path)
+    df = df[df["keep"]].copy()
+    kw = _dl_kwargs(num_workers)
+    loaders = {}
+    for split, train, shuffle in [("train", True, True), ("val", False, False), ("test", False, False)]:
+        sub = df[df["split_final"] == split].reset_index(drop=True)
+        ds = PatchBagDataset(sub, patch=patch, k=k, train=train, mean=mean, std=std)
+        loaders[split] = DataLoader(ds, batch_size=batch_size, shuffle=shuffle, drop_last=False, **kw)
+    return loaders
+
+
+def make_patch_ood_loader(tiny_manifest_path, patch: int = 224, k: int = 4, batch_size: int = 16,
+                          num_workers: int = 4, mean=IMAGENET_MEAN, std=IMAGENET_STD):
+    """Bag-of-patch OOD loader over all of tiny-genimage; returns (loader, df)."""
+    df = pd.read_csv(tiny_manifest_path)
+    if "keep" in df.columns:
+        df = df[df["keep"]].copy()
+    df = df.reset_index(drop=True)
+    ds = PatchBagDataset(df, patch=patch, k=k, train=False, mean=mean, std=std)
+    loader = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False, **_dl_kwargs(num_workers))
+    return loader, df
