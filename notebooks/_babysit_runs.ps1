@@ -13,13 +13,14 @@
 #   powershell -File _babysit_runs.ps1 -Only patch-ensemble  # just that one notebook
 #   powershell -File _babysit_runs.ps1 -Only eval-robustness # just one eval
 #   powershell -File _babysit_runs.ps1 -Only 07              # the 07_* notebook
+#   powershell -File _babysit_runs.ps1 -Only cnn-scratch,cnn-residual,dire-recon  # several specific notebooks
 #
 # WARNING: do NOT start this while another babysitter is still running - two instances
 # would launch notebooks concurrently and fight over the GPU.
 
 param(
-  [string]$Only  = "",     # run only notebooks whose filename or pipe matches (wildcard, case-insensitive); "" = full sequence
-  [double]$Hours = 18      # time window in hours before the loop stops launching
+  [string[]]$Only = @(),   # run only notebooks whose filename or pipe matches ANY of these (wildcard, case-insensitive); empty = full sequence
+  [double]$Hours  = 18     # time window in hours before the loop stops launching
 )
 
 $ErrorActionPreference = "Continue"
@@ -65,23 +66,27 @@ function Log($m) {
 }
 
 function FreshMetrics($pipe) {
-  # Supplementary signal for the TRAINING notebooks: metrics.json written THIS session
-  # (mtime > start) AND best_params.json present. Always false for data/eval notebooks
-  # (they have no such files) - those rely on the exit code alone.
-  $m  = Join-Path $repo "notebooks\artifacts\$pipe\metrics\metrics.json"
-  $bp = Join-Path $repo "notebooks\artifacts\$pipe\metrics\best_params.json"
+  # Cross-check: did this pipeline write a metrics.json THIS session (mtime > start)?
+  # True for any training notebook that reached its final cell. Data/eval notebooks have
+  # no metrics.json, so they fall back to the (handle-cached) exit code.
+  $m = Join-Path $repo "notebooks\artifacts\$pipe\metrics\metrics.json"
   if (-not (Test-Path $m)) { return $false }
-  return (((Get-Item $m).LastWriteTime -gt $START) -and (Test-Path $bp))
+  return ((Get-Item $m).LastWriteTime -gt $START)
 }
 
-# -Only filter: keep plan items whose filename or pipe name matches the pattern.
-if ($Only -ne "") {
-  $sel = @($plan | Where-Object { ($_.nb -like "*$Only*") -or ($_.pipe -like "*$Only*") })
+# -Only filter: keep plan items whose filename or pipe name matches ANY supplied pattern.
+# Accepts -Only a,b,c (array) or -Only "a,b,c" (single string) - both are flattened on commas.
+$patterns = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+if ($patterns.Count -gt 0) {
+  $sel = @($plan | Where-Object {
+    $item = $_
+    ($patterns | Where-Object { ($item.nb -like "*$_*") -or ($item.pipe -like "*$_*") }).Count -gt 0
+  })
   if ($sel.Count -eq 0) {
-    Log ("no notebook matches -Only '{0}'. Available: {1}" -f $Only, ($plan.pipe -join ', '))
+    Log ("no notebook matches -Only [{0}]. Available: {1}" -f ($patterns -join ', '), ($plan.pipe -join ', '))
     exit 1
   }
-  Log ("-Only '{0}' -> {1} notebook(s): {2}" -f $Only, $sel.Count, ($sel.pipe -join ', '))
+  Log ("-Only [{0}] -> {1} notebook(s): {2}" -f ($patterns -join ', '), $sel.Count, ($sel.pipe -join ', '))
   $plan = $sel
 }
 
@@ -106,13 +111,14 @@ while ($true) {
   # A launched run just finished -> classify by EXIT CODE (universal success signal).
   if ($null -ne $child -and $child.HasExited) {
     $code = $child.ExitCode
-    if ($code -eq 0) {
+    $fresh = FreshMetrics $current
+    if ($code -eq 0 -or $fresh) {                # success: clean exit OR a fresh metrics.json this session
       $ok++
-      $extra = if (FreshMetrics $current) { " (fresh metrics.json)" } else { "" }
-      Log ("FINISHED ok: {0} (exit 0){1}" -f $current, $extra)
+      $extra = if ($fresh) { " (fresh metrics.json)" } else { "" }
+      Log ("FINISHED ok: {0} (exit {1}){2}" -f $current, $code, $extra)
     } else {
       $failed++
-      Log ("WARN: {0} exited with code {1} - see _run_{0}.err.log" -f $current, $code)
+      Log ("WARN: {0} exited with code '{1}' - see _run_{0}.err.log" -f $current, $code)
     }
     $child = $null; $current = $null; $ticks = 0
   }
@@ -131,6 +137,7 @@ while ($true) {
          ('"{0}"' -f $nbpath))
   $child = Start-Process -FilePath $py -ArgumentList $a -PassThru -NoNewWindow `
              -RedirectStandardOutput $out -RedirectStandardError $err
+  $null = $child.Handle    # cache the handle NOW, else $child.ExitCode reads back $null after it exits
   $ticks = 0
   Start-Sleep -Seconds $pollSec
 }

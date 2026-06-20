@@ -1,0 +1,109 @@
+{
+  "pipeline": "cnn-residual",
+  "created": "2026-06-20T00:51:23+00:00",
+  "working_size": 128,
+  "normalization": "dataset",
+  "dataset": {
+    "in_distribution": "ai-real-images",
+    "ood": "tiny-genimage"
+  },
+  "threshold_default": 0.5,
+  "threshold_tuned": 0.53125,
+  "in_distribution": {
+    "at_0.5": {
+      "threshold": 0.5,
+      "n": 11963,
+      "n_fake": 5977,
+      "n_real": 5986,
+      "accuracy": 0.7868427651926774,
+      "f1_macro": 0.7864059442144684,
+      "precision": 0.7625248965834227,
+      "recall": 0.8326919859461268,
+      "auc_roc": 0.8671831227859148,
+      "pr_auc": 0.8562522880277688,
+      "mcc": 0.5761552613085853,
+      "brier": 0.15052242406926444,
+      "confusion_matrix": [
+        [
+          4436,
+          1550
+        ],
+        [
+          1000,
+          4977
+        ]
+      ]
+    },
+    "at_tuned": {
+      "threshold": 0.53125,
+      "n": 11963,
+      "n_fake": 5977,
+      "n_real": 5986,
+      "accuracy": 0.7883474044971996,
+      "f1_macro": 0.7882670851790743,
+      "precision": 0.7769737899983921,
+      "recall": 0.8084323239083152,
+      "auc_roc": 0.8671831227859148,
+      "pr_auc": 0.8562522880277688,
+      "mcc": 0.5771799988840437,
+      "brier": 0.15052242406926444,
+      "confusion_matrix": [
+        [
+          4599,
+          1387
+        ],
+        [
+          1145,
+          4832
+        ]
+      ]
+    }
+  },
+  "ood": {
+    "overall_accuracy": 0.5189725127150123,
+    "per_generator": {
+      "adm": {
+        "accuracy": 0.4878,
+        "n": 5000
+      },
+      "biggan": {
+        "accuracy": 0.4122,
+        "n": 5000
+      },
+      "glide": {
+        "accuracy": 0.5858,
+        "n": 5000
+      },
+      "midjourney": {
+        "accuracy": 0.5727145429085817,
+        "n": 4999
+      },
+      "sdv5": {
+        "accuracy": 0.5463092618523705,
+        "n": 4999
+      },
+      "vqdm": {
+        "accuracy": 0.4306,
+        "n": 5000
+      },
+      "wukong": {
+        "accuracy": 0.5974,
+        "n": 5000
+      }
+    },
+    "preview": true
+  },
+  "train_history": {
+    "epochs": 40,
+    "best_epoch": 40,
+    "best_val_auc": 0.868016667328594
+  },
+  "figures": {
+    "training_curves": "figures/training_curves.png",
+    "confusion": "figures/confusion.png",
+    "roc_pr": "figures/roc_pr.png",
+    "reliability": "figures/reliability.png",
+    "ood_per_generator": "figures/ood_per_generator.png",
+    "gradcam": "figures/gradcam.png"
+  }
+}

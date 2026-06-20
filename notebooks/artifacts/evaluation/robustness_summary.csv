@@ -1,0 +1,8 @@
+pipeline,clean_acc,mean_perturbed_acc,worst_acc
+vit-lora,0.975,0.92275,0.7275
+cnn-finetune,0.93,0.859125,0.4975
+cnn-scratch,0.9,0.790062,0.54125
+two-stream,0.87875,0.786875,0.49625
+freqcross,0.905,0.786,0.505
+srm-noise,0.87,0.760125,0.505
+cnn-residual,0.78125,0.731125,0.51375

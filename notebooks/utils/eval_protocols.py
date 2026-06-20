@@ -243,6 +243,17 @@ def ood_frame(name, model, device, batch_size=256, num_workers=0) -> pd.DataFram
 
 # ---- robustness (image family) ---------------------------------------------
 
+class _AddGaussianNoise:
+    """Picklable additive-noise transform. (A lambda would break DataLoader workers
+    on Windows spawn, which needs the transform to pickle.)"""
+
+    def __init__(self, std):
+        self.std = float(std)
+
+    def __call__(self, x):
+        return (x + torch.randn_like(x) * self.std).clamp(0, 1)
+
+
 def _perturb_tf(kind, level, size, mean, std):
     """Eval transform that applies one perturbation (input: uint8 CHW tensor)."""
     pre, post_extra = [], []
@@ -255,8 +266,7 @@ def _perturb_tf(kind, level, size, mean, std):
         pre = [v2.Resize(small, antialias=True)]
     resize = [v2.Resize(size, antialias=True), v2.CenterCrop(size), v2.ToDtype(torch.float32, scale=True)]
     if kind == "gaussian_noise_std" and level > 0:
-        s = float(level)
-        post_extra = [v2.Lambda(lambda x: (x + torch.randn_like(x) * s).clamp(0, 1))]
+        post_extra = [_AddGaussianNoise(level)]
     norm = [v2.Normalize(mean=list(mean), std=list(std))]
     return v2.Compose(pre + resize + post_extra + norm)
 
@@ -270,7 +280,8 @@ def robustness_loader(name, kind, level, subsample=2000, batch_size=128, num_wor
     sp = SPEC[name]; mean, std = D.resolve_stats(sp["norm"], AIR)
     tf = _perturb_tf(kind, level, sp["size"], mean, std)
     ds = D.DeepfakeDataset(df, tf, source="files")
-    return torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    return torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=num_workers,
+                                       pin_memory=(num_workers > 0))
 
 
 def robustness_point(name, model, kind, level, device, **kw):

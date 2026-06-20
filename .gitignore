@@ -25,9 +25,6 @@ src/backend/predictions/
 # ---- Babysitter run logs (notebooks/_babysit.log, _run_*.log) ----
 notebooks/_*.log
 
-# ---- Optuna study DBs (resumable; best_params.json + optuna_trials.json under metrics/ are committed) ----
-notebooks/artifacts/**/tuning/
-
 # ---- Python ----
 __pycache__/
 *.py[cod]

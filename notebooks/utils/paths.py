@@ -8,14 +8,21 @@ from __future__ import annotations
 from pathlib import Path
 
 
+# Files that identify the repository root. CLAUDE.md is gitignored, so it is
+# ABSENT on fresh clones — anchoring on it alone makes root detection fall back
+# to the cwd, which lands artifacts under notebooks/notebooks/ when a notebook is
+# run from the notebooks/ dir. We therefore also anchor on committed markers.
+ROOT_MARKERS = ("CLAUDE.md", ".git", "requirements.txt", "README.md", "pyproject.toml")
+
+
 def find_repo_root(start: Path | str | None = None) -> Path:
-    """Walk upward from ``start`` until the folder containing ``CLAUDE.md`` is found."""
+    """Walk upward from ``start`` until a folder containing a repo-root marker is found."""
     p = Path(start or Path.cwd()).resolve()
     for candidate in (p, *p.parents):
-        if (candidate / "CLAUDE.md").exists():
+        if any((candidate / m).exists() for m in ROOT_MARKERS):
             return candidate
-    # Fallback: assume we are inside notebooks/ and the parent is the root.
-    return p
+    # Fallback: if we're inside a notebooks/ dir, the parent is the root.
+    return p.parent if p.name == "notebooks" else p
 
 
 def repo_paths(start: Path | str | None = None) -> dict[str, Path]:

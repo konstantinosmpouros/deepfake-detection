@@ -1,0 +1,11 @@
+pipeline,ood_acc,lift_over_random,beats_random
+patch-ensemble,0.677496,0.177296,True
+vit-lora,0.602177,0.101977,True
+clip-probe,0.583662,0.083462,True
+cnn-finetune,0.563632,0.063432,True
+freqcross,0.552632,0.052432,True
+cnn-scratch,0.548831,0.048631,True
+dire-recon,0.5415,0.0413,True
+two-stream,0.526402,0.026201,True
+srm-noise,0.523116,0.022916,True
+cnn-residual,0.518973,0.018773,False

@@ -1,0 +1,8 @@
+{
+  "backbone": "efficientnet_b0",
+  "p_drop": 0.2970702945812612,
+  "lr": 0.000619428307410396,
+  "weight_decay": 1.0139434690021975e-05,
+  "label_smooth": 0.009414835630156285,
+  "loss": "bce"
+}
