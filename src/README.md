@@ -25,14 +25,14 @@ Photographic, higher-resolution images (the 32×32 CIFAKE dataset was considered
 4. **Explainability** — Grad-CAM, attention rollout, frequency-spectrum visualizations.
 5. **App** — a Streamlit + FastAPI app to upload a photo, pick a pipeline, and get a prediction.
 
-See [CLAUDE.md](CLAUDE.md) for the full plan, and [docs/research_1.md](docs/research_1.md) / [docs/research_2.md](docs/research_2.md) for the method survey.
+See [CLAUDE.md](CLAUDE.md) for the working spec, and **[docs/](docs/)** for the full project documentation — data, shared methods, per-pipeline deep dives, evaluation protocols, results, and the app.
 
 ## Project structure
 
 ```text
 deepfake-detection/
 ├── data/          # datasets + manifests — gitignored
-├── docs/          # research notes and references
+├── docs/          # full project documentation (see docs/README.md)
 ├── notebooks/     # exploratory analysis and experiments
 │   ├── utils/     # reusable helpers (data, models, training, eval, viz)
 │   └── artifacts/ # per-pipeline figures / models / metrics
