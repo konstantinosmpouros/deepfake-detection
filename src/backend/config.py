@@ -45,4 +45,8 @@ PIPELINE_NAMES = [
     "vit-lora",
     "clip-probe",
     "two-stream",
+    "freqcross",
+    "srm-noise",
+    "patch-ensemble",
+    "dire-recon",
 ]

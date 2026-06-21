@@ -71,13 +71,22 @@ class BasePipeline:
         return model
 
     def warmup(self) -> None:
-        """Build the architecture, attach trained weights, ready for inference."""
-        model = self.build().to(self.device).eval()
-        ckpt = self.weights_path()
-        if ckpt.exists():
-            model = self.load_weights(model, ckpt)
-        self.model = model.to(self.device).eval()
+        """Rebuild from best_params.json + load weights, ready for inference.
+
+        Delegates to ``utils.eval_protocols.load_model`` — the SAME loader the
+        evaluation notebooks use — so the app's architecture (Optuna-tuned width /
+        depth / rank / backbone) and weights match the committed models EXACTLY.
+        The per-subclass build()/load_weights below are legacy and no longer called
+        here. Subclasses needing extra state (clip-probe's encoder, dire-recon's
+        diffusion pipe) override warmup() and call _load_model() themselves.
+        """
+        self.model = self._load_model()
         self.mean, self.std = D.resolve_stats(self.norm, config.AIR_DIR)
+
+    def _load_model(self):
+        """Single source of truth: rebuild from best_params.json + attach weights."""
+        from utils import eval_protocols as EP   # noqa: E402
+        return EP.load_model(self.pipeline, self.device)
 
     # --- preprocessing (mirrors the from-files eval path / make_ood_loader) ---
     def preprocess(self, image_path) -> torch.Tensor:

@@ -47,7 +47,7 @@ def health():
     return {"status": "ok", "device": str(manager.device)}
 
 
-@app.get("pipelines")
+@app.get("/pipelines")
 def get_pipelines():
     return pipelines.list_pipelines()
 

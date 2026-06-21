@@ -3,7 +3,9 @@
 `manager.py` and `main.py` only ever call `get_pipeline(key, device)` and
 `list_pipelines()`, so nothing outside this package knows pipeline internals.
 cnn-finetune exposes one key per backbone (both write to the 'cnn-finetune'
-folder).
+folder). All ten developed pipelines are registered here; each adapter rebuilds
+its architecture from the committed best_params.json (via eval_protocols), so the
+app matches the report exactly.
 """
 from __future__ import annotations
 
@@ -14,6 +16,10 @@ from .cnn_finetune import CNNFinetunePipeline
 from .vit_lora import VitLoraPipeline
 from .clip_probe import ClipProbePipeline
 from .two_stream import TwoStreamPipeline
+from .freqcross import FreqCrossPipeline
+from .srm_noise import SrmNoisePipeline
+from .patch_ensemble import PatchEnsemblePipeline
+from .dire_recon import DireReconPipeline
 
 # Ordered: key -> factory. device defaults to None for cheap metadata listing
 # (the architecture is only built in warmup(), not in __init__).
@@ -25,6 +31,10 @@ REGISTRY = {
     "vit-lora": lambda device=None: VitLoraPipeline(device),
     "clip-probe": lambda device=None: ClipProbePipeline(device),
     "two-stream": lambda device=None: TwoStreamPipeline(device),
+    "freqcross": lambda device=None: FreqCrossPipeline(device),
+    "srm-noise": lambda device=None: SrmNoisePipeline(device),
+    "patch-ensemble": lambda device=None: PatchEnsemblePipeline(device),
+    "dire-recon": lambda device=None: DireReconPipeline(device),
 }
 
 

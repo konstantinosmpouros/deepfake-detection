@@ -1,44 +1,39 @@
 """clip-probe — frozen CLIP image encoder + trained MLP head.
 
-Only the tiny MLP head is committed; the frozen CLIP encoder is re-downloaded.
-A single upload is embedded with the same open_clip preprocessing used for the
-OOD evaluation (embed_paths), then scored by the head.
+The MLP head is rebuilt from best_params.json (hidden / n_layers) and its
+committed weights are loaded via eval_protocols.load_model; the frozen CLIP
+encoder is re-downloaded and used to embed each upload exactly as in the OOD
+evaluation (embed_paths).
 """
 from __future__ import annotations
 
 import torch
 
-from .base import BasePipeline, M, T
+from .base import BasePipeline
 from utils import embed   # noqa: E402
 
 
 class ClipProbePipeline(BasePipeline):
     key = "clip-probe"
     label = "clip-probe"
+    norm = "clip"
     downloads_backbone = True   # downloads the frozen CLIP encoder on first warm-up
 
     ENCODER_NAME = "ViT-B-32"
     ENCODER_PRETRAINED = "openai"
-    EMB_DIM = 512               # ViT-B-32 image embedding dim
 
     def __init__(self, device=None):
         super().__init__(device)
         self.clip_model = None
         self.clip_pre = None
 
-    def build(self):
-        return M.build_mlp_head(self.EMB_DIM, hidden=256, p_drop=0.3)
-
     def warmup(self):
-        # Frozen encoder + its eval preprocessing.
+        # Frozen encoder + its eval preprocessing (used to embed each upload).
         self.clip_model, self.clip_pre, _ = embed.load_clip(
             self.ENCODER_NAME, self.ENCODER_PRETRAINED, device=str(self.device)
         )
-        head = self.build().to(self.device).eval()
-        ckpt = self.weights_path()
-        if ckpt.exists():
-            T.load_checkpoint(ckpt, head, map_location=self.device)
-        self.model = head.to(self.device).eval()
+        # Head rebuilt from best_params.json (hidden=1024, n_layers=3) + committed weights.
+        self.model = self._load_model()
 
     def preprocess(self, image_path):
         emb = embed.embed_paths([str(image_path)], self.clip_model, self.clip_pre, self.device)

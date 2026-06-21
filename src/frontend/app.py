@@ -62,7 +62,7 @@ with st.sidebar:
     unavailable = [k for k, p in infos.items() if not p["available"]]
 
     if not selectable:
-        st.warning("No trained weights found yet. Train a pipeline (notebooks 04–09) "
+        st.warning("No trained weights found yet. Train a pipeline (notebooks 04–13) "
                    "so its checkpoint appears under `artifacts/<pipeline>/models/`.")
     else:
         default_idx = selectable.index(resident) if resident in selectable else 0
@@ -107,6 +107,7 @@ if busy or any(p["state"] == "warming" for p in infos.values()):
 METHOD_BLURB = {
     "grad-cam": "**Grad-CAM** — warmer regions pushed the score toward *fake*.",
     "attention-rollout": "**Attention rollout** — patches the ViT's `[CLS]` token attends to.",
+    "patch-attention": "**Per-patch MIL attention** — a greener header marks the patches the pooling weighted most.",
 }
 
 
