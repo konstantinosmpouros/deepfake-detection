@@ -128,8 +128,8 @@ Maps **selector keys → factories**. `cnn-finetune` exposes one key per backbon
 `cnn-finetune` artifact folder):
 
 ```
-cnn-scratch · cnn-residual · cnn-finetune-efficientnet_b0 · cnn-finetune-resnet50
-            · vit-lora · clip-probe · two-stream
+cnn-scratch · cnn-residual · cnn-finetune-efficientnet_b0 · cnn-finetune-resnet50 · vit-lora
+            · clip-probe · two-stream · freqcross · srm-noise · patch-ensemble · dire-recon
 ```
 
 Each adapter subclasses `BasePipeline` and implements `build()` / `load_weights()` / `warmup()` /
@@ -148,9 +148,11 @@ grey those options out instead of letting a user select a pipeline that would th
 embedding probe with no spatial feature map to run Grad-CAM over, so it honestly reports explainability as
 unavailable rather than fabricating a meaningless heatmap.
 
-> The registry currently exposes the six core pipelines. The four extra-architecture pipelines
-> (`freqcross`, `srm-noise`, `patch-ensemble`, `dire-recon`) are trained and documented but not yet wired
-> into the app selector.
+> All ten pipelines are wired into the selector (eleven keys — `cnn-finetune` exposes one per backbone).
+> Each adapter rebuilds its architecture from the committed `best_params.json` (via
+> `eval_protocols.load_model`), so the app reproduces the evaluated models exactly. `dire-recon` additionally
+> requires `diffusers` and downloads Stable Diffusion v1.5 on first use, so it is offered only when those are
+> present.
 
 ## 6.2 Prediction schema ([`schemas.py`](../src/backend/schemas.py))
 
