@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5f1">
+  <title>Deepfake Detection | Comparative Research Study</title>
+  <link rel="stylesheet" href="styles.css?v=4">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="brand" type="button" data-view-target="overview" aria-label="Επιστροφή στην επισκόπηση">
+        <span class="brand-mark">DF</span>
+        <span><strong>Deepfake Detection</strong><small>Comparative research study</small></span>
+      </button>
+
+      <nav class="primary-nav" aria-label="Κύριες ενότητες">
+        <button class="nav-tab active" type="button" data-view-target="overview">1 · Πρόβλημα</button>
+        <button class="nav-tab" type="button" data-view-target="data">2 · Δεδομένα</button>
+        <button class="nav-tab" type="button" data-view-target="architectures">3 · Αρχιτεκτονικές</button>
+        <button class="nav-tab" type="button" data-view-target="evaluation">4 · Αξιολόγηση</button>
+        <button class="nav-tab" type="button" data-view-target="results">5 · Αποτελέσματα</button>
+        <button class="nav-tab" type="button" data-view-target="deployment">6 · Συμπεράσματα</button>
+      </nav>
+
+      <div class="top-actions">
+        <button id="compare-open" class="command-button" type="button" title="Σύγκριση αρχιτεκτονικών" aria-haspopup="dialog" aria-controls="compare-dialog" aria-expanded="false">Σύγκριση</button>
+        <button id="fullscreen" class="icon-button" type="button" title="Πλήρης οθόνη" aria-label="Πλήρης οθόνη">⛶</button>
+      </div>
+    </header>
+
+    <main class="workspace" id="workspace">
+      <section id="act-problem" class="view slide active" data-view="overview" aria-hidden="false">
+        <div class="view-scroll overview-view">
+          <div class="overview-hero">
+            <div class="overview-copy">
+              <p class="eyebrow">Ενότητα I · Ερευνητικό πρόβλημα</p>
+              <h1>Αξιολόγηση της γενίκευσης ανιχνευτών AI-generated εικόνων</h1>
+              <p class="hero-lead">Δέκα detectors φτάνουν έως 0.9972 AUC στο γνώριμο test set. Στο held-out generator benchmark, ο καλύτερος σταματά στο 0.6775 accuracy.</p>
+              <div class="authors">Κωνσταντίνος Μπούρος · Νίκος Γάτος · Χρήστος Καρατσάλος</div>
+              <button class="primary-command" type="button" data-view-target="data">Μεθοδολογία πειραματικού ελέγχου</button>
+            </div>
+            <figure class="hero-figure">
+              <img class="zoomable" src="assets/cover-samples-cropped.png" alt="Δείγματα πραγματικών και AI-generated εικόνων του primary dataset">
+              <figcaption>Primary dataset: real (επάνω) και AI-generated (κάτω).</figcaption>
+            </figure>
+          </div>
+
+          <div class="headline-metrics" aria-label="Κύρια αποτελέσματα">
+            <div><span>Maximum ID AUC</span><strong>0.9972</strong><small>ViT-LoRA</small></div>
+            <div><span>Maximum OOD accuracy</span><strong>0.6775</strong><small>Patch ensemble</small></div>
+            <div><span>OOD generator subsets</span><strong>7</strong><small>sealed from training and tuning</small></div>
+            <div class="alert"><span>Accuracy reduction</span><strong>29–39</strong><small>points for competitive models</small></div>
+          </div>
+
+          <div class="overview-lower">
+            <section class="research-questions" aria-labelledby="rq-title">
+              <div class="section-heading"><p>Ερευνητικά ερωτήματα</p><h2 id="rq-title">Κριτήρια αξιόπιστης αξιολόγησης</h2></div>
+              <div class="rq-selector" role="tablist" aria-label="Ερευνητικά ερωτήματα">
+                <button class="active" type="button" role="tab" data-rq="0">RQ1</button>
+                <button type="button" role="tab" data-rq="1">RQ2</button>
+                <button type="button" role="tab" data-rq="2">RQ3</button>
+                <button type="button" role="tab" data-rq="3">RQ4</button>
+              </div>
+              <div class="rq-detail" id="rq-detail" aria-live="polite"></div>
+            </section>
+
+            <section class="model-map" aria-labelledby="model-map-title">
+              <div class="section-heading"><p>Συγκριτικό πλαίσιο</p><h2 id="model-map-title">Δέκα pipelines και οι αντίστοιχες ερευνητικές υποθέσεις</h2></div>
+              <div id="overview-model-map" class="overview-model-map"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section id="act-experiment" class="view slide" data-view="data" aria-hidden="true">
+        <div class="view-scroll data-view">
+          <header class="view-header">
+            <div><p class="eyebrow">Ενότητα II · Δεδομένα και πειραματικός σχεδιασμός</p><h1>Έλεγχος των δεδομένων και περιορισμός μη αιτιωδών συσχετίσεων</h1></div>
+            <p>Η συσχέτιση μεταξύ ανάλυσης και ετικέτας μπορούσε να υπερεκτιμήσει την απόδοση. Cleaning, leakage checks και κοινό preprocessing 256² περιορίζουν αυτή την πηγή μεροληψίας.</p>
+          </header>
+
+          <div class="lab-controls">
+            <div class="segmented" role="group" aria-label="Dataset">
+              <button class="active" type="button" data-dataset="primary">ai-real-images</button>
+              <button type="button" data-dataset="ood">tiny-genimage</button>
+            </div>
+            <div class="tab-strip" role="tablist" aria-label="Ανάλυση δεδομένων">
+              <button class="active" type="button" role="tab" data-data-topic="samples">Samples</button>
+              <button type="button" role="tab" data-data-topic="frequency">Frequency</button>
+              <button type="button" role="tab" data-data-topic="embedding">Embedding</button>
+              <button type="button" role="tab" data-data-topic="shortcut">Shortcut audit</button>
+            </div>
+          </div>
+
+          <div class="data-lab-grid">
+            <aside class="dataset-facts" id="dataset-facts"></aside>
+            <figure class="lab-figure">
+              <img id="data-figure" class="zoomable" src="assets/samples-primary.png" alt="Δείγματα του primary dataset">
+              <figcaption id="data-caption"></figcaption>
+            </figure>
+            <article class="analysis-panel" id="data-analysis" aria-live="polite"></article>
+          </div>
+        </div>
+      </section>
+
+      <section id="act-hypotheses" class="view slide" data-view="architectures" aria-hidden="true">
+        <div class="architecture-workbench">
+          <aside class="architecture-sidebar">
+            <div class="sidebar-heading"><p>Ενότητα III · Αρχιτεκτονικές και υποθέσεις</p><strong>10 pipelines</strong></div>
+            <div id="architecture-list" class="architecture-list" role="listbox" aria-label="Επιλογή αρχιτεκτονικής"></div>
+          </aside>
+
+          <article class="architecture-detail" aria-live="polite">
+            <header class="architecture-header">
+              <div>
+                <p id="arch-family" class="eyebrow"></p>
+                <h1 id="arch-name"></h1>
+                <p id="arch-subtitle" class="architecture-subtitle"></p>
+                <p class="hypothesis-statement"><strong>Υπόθεση:</strong> <span id="arch-hypothesis"></span></p>
+              </div>
+              <div class="architecture-metrics">
+                <div><span>ID AUC</span><strong id="arch-auc"></strong></div>
+                <div><span>OOD acc</span><strong id="arch-ood"></strong></div>
+                <div><span>ID acc − OOD</span><strong id="arch-gap"></strong></div>
+              </div>
+            </header>
+
+            <figure class="architecture-diagram">
+              <img id="arch-diagram" class="zoomable" src="assets/architectures/cnn-scratch.png" alt="Διάγραμμα αρχιτεκτονικής">
+              <figcaption id="arch-diagram-caption"></figcaption>
+            </figure>
+
+            <div class="architecture-tabs" role="tablist" aria-label="Λεπτομέρειες αρχιτεκτονικής">
+              <button class="active" type="button" role="tab" data-arch-tab="mechanism">Πώς λειτουργεί</button>
+              <button type="button" role="tab" data-arch-tab="training">Εκπαίδευση</button>
+              <button type="button" role="tab" data-arch-tab="evidence">Evidence</button>
+            </div>
+
+            <section class="architecture-panel active" data-arch-panel="mechanism">
+              <div class="scientific-summary">
+                <h2>Θεωρητική βάση</h2>
+                <p id="arch-science"></p>
+                <div id="arch-formula" class="formula"></div>
+              </div>
+              <div class="signal-flow">
+                <div id="stage-buttons" class="stage-buttons" role="tablist" aria-label="Στάδια signal flow"></div>
+                <div id="stage-detail" class="stage-detail" aria-live="polite"></div>
+              </div>
+            </section>
+
+            <section class="architecture-panel" data-arch-panel="training">
+              <div class="technical-specs" id="arch-specs"></div>
+              <article class="training-rationale">
+                <h2>Μεθοδολογία εκπαίδευσης</h2>
+                <p id="arch-training"></p>
+                <p id="arch-limitation" class="limitation-note"></p>
+              </article>
+            </section>
+
+            <section class="architecture-panel evidence-panel" data-arch-panel="evidence">
+              <figure>
+                <img id="arch-evidence-image" class="zoomable" src="assets/evidence/cnn-scratch.png" alt="Explainability evidence">
+                <figcaption id="arch-evidence-caption"></figcaption>
+              </figure>
+              <article>
+                <h2>Πειραματικό αποτέλεσμα</h2>
+                <p id="arch-finding"></p>
+                <dl id="arch-results-list" class="results-definition"></dl>
+              </article>
+            </section>
+          </article>
+        </div>
+      </section>
+
+      <section id="act-trial" class="view slide" data-view="evaluation" aria-hidden="true">
+        <div class="view-scroll evaluation-view">
+          <header class="view-header">
+            <div><p class="eyebrow">Ενότητα IV · Πρωτόκολλα αξιολόγησης</p><h1>Κοινό πλαίσιο αξιολόγησης για τις δέκα αρχιτεκτονικές</h1></div>
+            <p>Το ID score ελέγχει αν το task είναι learnable. OOD, perturbations και architecture-native explanations ελέγχουν αν το αποτέλεσμα είναι μεταφέρσιμο και αξιόπιστο.</p>
+          </header>
+          <div class="protocol-selector" role="tablist" aria-label="Πρωτόκολλα αξιολόγησης">
+            <button class="active" type="button" role="tab" data-protocol="id"><span>P1</span>In-distribution</button>
+            <button type="button" role="tab" data-protocol="ood"><span>P2</span>Cross-generator OOD</button>
+            <button type="button" role="tab" data-protocol="robustness"><span>P3</span>Robustness</button>
+            <button type="button" role="tab" data-protocol="xai"><span>XAI</span>Explainability</button>
+          </div>
+          <div class="protocol-content">
+            <article id="protocol-copy"></article>
+            <figure><img id="protocol-image" class="zoomable" src="assets/indist-bars.png" alt="Αποτελέσματα πρωτοκόλλου"><figcaption id="protocol-caption"></figcaption></figure>
+          </div>
+        </div>
+      </section>
+
+      <section id="act-verdict" class="view slide" data-view="results" aria-hidden="true">
+        <div class="view-scroll results-view">
+          <header class="view-header">
+            <div><p class="eyebrow">Ενότητα V · Συγκριτικά αποτελέσματα</p><h1>Η κατάταξη των μοντέλων μεταβάλλεται υπό distribution shift</h1></div>
+            <p>Το ViT παρουσιάζει την υψηλότερη επίδοση εντός κατανομής, ενώ το native-patch MIL την υψηλότερη OOD accuracy. Η απόσταση από την κατανομή εκπαίδευσης επηρεάζει καθοριστικά τη γενίκευση.</p>
+          </header>
+          <div class="results-tabs" role="tablist" aria-label="Οπτική αποτελεσμάτων">
+            <button class="active" type="button" role="tab" data-result="id">ID performance</button>
+            <button type="button" role="tab" data-result="ood">OOD vs random</button>
+            <button type="button" role="tab" data-result="generators">Per generator</button>
+            <button type="button" role="tab" data-result="robustness">Robustness</button>
+          </div>
+          <div class="results-explorer">
+            <figure><img id="results-image" class="zoomable" src="assets/indist-bars.png" alt="Γράφημα αποτελεσμάτων"><figcaption id="results-caption"></figcaption></figure>
+            <article id="results-analysis"></article>
+          </div>
+          <div class="finding-strip">
+            <div><span>Δεν επιβεβαιώθηκε</span><strong>Υπεροχή του CLIP στη γενίκευση</strong></div>
+            <div><span>Μερικώς επιβεβαιώθηκε</span><strong>Καθολική ισχύς συχνοτικών χαρακτηριστικών</strong></div>
+            <div><span>Υποστηρίζεται</span><strong>Μεταφορά τοπικών χαρακτηριστικών υψηλής ανάλυσης</strong></div>
+            <div><span>Δεν επιβεβαιώθηκε</span><strong>Πρόβλεψη της OOD απόδοσης από το ID AUC</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="act-next" class="view slide" data-view="deployment" aria-hidden="true">
+        <div class="view-scroll deployment-view">
+          <header class="view-header">
+            <div><p class="eyebrow">Ενότητα VI · Συμπεράσματα και μελλοντική εργασία</p><h1>Η υψηλή in-distribution επίδοση δεν τεκμηριώνει ετοιμότητα για deployment</h1></div>
+            <p>Η εφαρμογή υλοποιεί κοινό inference contract για διαφορετικές αρχιτεκτονικές. Η αξιοποίηση σε πραγματικές συνθήκες απαιτεί διευρυμένη κάλυψη generators, OOD calibration και ανθεκτικότητα στον θόρυβο.</p>
+          </header>
+          <div class="deployment-grid">
+            <section class="runtime-panel">
+              <div class="runtime-flow" aria-label="Ροή εφαρμογής">
+                <span>select</span><span>warm</span><span>upload</span><span>predict</span><span>explain</span><span>persist</span>
+              </div>
+              <div class="prediction-readout">
+                <p>two-stream · persisted inference</p>
+                <div><strong>REAL</strong><span>p(fake) 0.223</span></div>
+                <dl><dt>spatial</dt><dd>0.328</dd><dt>frequency</dt><dd>0.173</dd></dl>
+              </div>
+              <div class="runtime-facts">
+                <div><strong>1</strong><span>resident model στη GPU</span></div>
+                <div><strong>1</strong><span>inference lock</span></div>
+                <div><strong>10/10</strong><span>pipelines wired στο UI</span></div>
+              </div>
+            </section>
+            <figure class="deployment-image"><img class="zoomable" src="assets/app-sample.png" alt="Εικόνα πραγματικού persisted inference"><figcaption>Το input αποθηκεύεται μαζί με το uniform JSON response.</figcaption></figure>
+          </div>
+          <div class="limits-grid">
+            <section><h2>Περιορισμοί της μελέτης</h2><ul><li>Ένα μόνο OOD dataset pairing.</li><li>DIRE σε 2,000-image ID subsample.</li><li>Δύο untuned baselines.</li><li>ID thresholds χωρίς OOD recalibration.</li></ul></section>
+            <section><h2>Μελλοντική εργασία</h2><ul><li>Περισσότερες generator families στο training.</li><li>Noise-aware training και denoising.</li><li>Patch + frequency ensemble.</li><li>OOD recalibration των thresholds.</li></ul></section>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <div><span id="section-index">01</span><span>/</span><span>06</span><strong id="section-name">Ερευνητικό πρόβλημα</strong></div>
+      <div class="status-actions">
+        <button id="previous-section" class="icon-button dark-icon" type="button" title="Προηγούμενη ενότητα" aria-label="Προηγούμενη ενότητα">←</button>
+        <button id="next-section" class="icon-button dark-icon" type="button" title="Επόμενη ενότητα" aria-label="Επόμενη ενότητα">→</button>
+      </div>
+    </footer>
+  </div>
+
+  <dialog id="compare-dialog" class="compare-dialog" aria-label="Σύγκριση αρχιτεκτονικών">
+    <div class="dialog-header"><div><p>Συγκριτική ανάλυση</p><h2>Σύγκριση δύο pipelines</h2></div><button id="compare-close" class="icon-button" type="button" title="Κλείσιμο σύγκρισης" aria-label="Κλείσιμο σύγκρισης">×</button></div>
+    <div class="compare-selectors">
+      <label>Μοντέλο A<select id="compare-a"></select></label>
+      <span>versus</span>
+      <label>Μοντέλο B<select id="compare-b"></select></label>
+    </div>
+    <div id="compare-content" class="compare-content"></div>
+  </dialog>
+
+  <dialog id="image-dialog" class="image-dialog" aria-label="Μεγέθυνση εικόνας">
+    <button id="image-close" class="icon-button" type="button" title="Κλείσιμο μεγέθυνσης" aria-label="Κλείσιμο μεγέθυνσης">×</button>
+    <img id="dialog-image" alt="">
+  </dialog>
+
+  <script src="app.js?v=6"></script>
+</body>
+</html>
