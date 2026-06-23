@@ -84,7 +84,7 @@ Few-shot (linear probe / fine-tune; foundation probes averaged over 3 seeds):
 ## Pointers
 
 - Notebook: [`notebooks/cifake-study.ipynb`](../notebooks/cifake-study.ipynb)
-- Full write-up (architectures, per-question analysis, figures): `docs/supplementary/CIFAKE_Report.pdf`
+- Full write-up (architectures, per-question analysis, figures): [`presentation_cifake/CIFAKE_Report.pdf`](../presentation_cifake/CIFAKE_Report.pdf)
 
 *In-distribution CIFAKE only — no cross-generator OOD evaluation. Numbers are from a single balanced 10k
 subset run; few-shot figures are 3-seed means.*
