@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5f1">
+  <title>CIFAKE | Supplementary Study</title>
+  <link rel="stylesheet" href="styles.css?v=1">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="brand" type="button" data-view-target="problem" aria-label="Επιστροφή στην αρχή">
+        <span class="brand-mark">CF</span>
+        <span><strong>CIFAKE · Supplementary</strong><small>Real vs AI-generated · 32×32</small></span>
+      </button>
+      <nav class="primary-nav" aria-label="Ενότητες">
+        <button class="nav-tab active" type="button" data-view-target="problem">1 · Πρόβλημα</button>
+        <button class="nav-tab" type="button" data-view-target="data">2 · Δεδομένα &amp; Features</button>
+        <button class="nav-tab" type="button" data-view-target="architectures">3 · Αρχιτεκτονικές</button>
+        <button class="nav-tab" type="button" data-view-target="results">4 · Αποτελέσματα</button>
+        <button class="nav-tab" type="button" data-view-target="fewshot">5 · Few-shot</button>
+        <button class="nav-tab" type="button" data-view-target="conclusions">6 · Συμπεράσματα</button>
+      </nav>
+      <div class="top-actions">
+        <button id="fullscreen" class="icon-button" type="button" title="Πλήρης οθόνη" aria-label="Πλήρης οθόνη">⛶</button>
+      </div>
+    </header>
+
+    <main class="workspace" id="workspace">
+
+      <!-- 1 · Πρόβλημα -->
+      <section class="view active" data-view="problem" aria-hidden="false">
+        <div class="view-scroll">
+          <div class="hero">
+            <div>
+              <p class="eyebrow">Συμπληρωματική μελέτη · εκτός core scope</p>
+              <h1>Ανίχνευση AI-generated εικόνων στο CIFAKE (32×32)</h1>
+              <p class="hero-lead">Επανεξετάζουμε το dataset που το κύριο project απέρριψε ως πολύ μικρό. Η πρόκληση δεν είναι «τι δείχνει» η εικόνα, αλλά τα λεπτά generative artifacts — και ποιος παράγοντας πραγματικά μετράει.</p>
+              <div class="authors">In-distribution μόνο · CIFAR-10 (real) vs Stable Diffusion v1.4 (fake)</div>
+              <button class="primary-command" type="button" data-view-target="data">Δεδομένα &amp; Features →</button>
+            </div>
+            <figure class="hero-figure">
+              <img class="zoomable" src="assets/samples.png" alt="Δείγματα εικόνων FAKE και REAL του CIFAKE">
+              <figcaption>Δείγματα ανά κλάση: FAKE (επάνω) και REAL (κάτω) — ίδιες κατηγορίες CIFAR-10.</figcaption>
+            </figure>
+          </div>
+
+          <div class="headline-metrics" aria-label="Κύρια νούμερα">
+            <div class="accent-blue"><span>Best full-data acc</span><strong>0.962</strong><small>ViT-B/16 full fine-tune</small></div>
+            <div class="accent-green"><span>Best no-fine-tuning</span><strong>0.947</strong><small>CLIP-probe (frozen)</small></div>
+            <div class="accent-coral"><span>Best 5-shot</span><strong>0.675</strong><small>CLIP-probe (linear)</small></div>
+            <div><span>Μέθοδοι στο benchmark</span><strong>14</strong><small>classical → foundation</small></div>
+          </div>
+
+          <div class="grid-3" style="margin-top:30px">
+            <div class="card"><h3>Δυαδικό &amp; ισορροπημένο</h3><p>5.000 / 5.000 (imbalance 1.0). Καμία τεχνική ανισορροπίας· accuracy + F1-macro + confusion matrix.</p></div>
+            <div class="card"><h3>Το σήμα είναι λεπτό</h3><p>Real και fake μοιράζονται τις ίδιες κατηγορίες· το διακριτικό σήμα κρύβεται σε υφές υψηλής συχνότητας, όχι στο αντικείμενο.</p></div>
+            <div class="card"><h3>Γιατί supplementary</h3><p>32×32 + classical baselines σπάνε τις συμβάσεις του core project (224px, deep-only) — κρατιέται ως contrast.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2 · Δεδομένα & Features -->
+      <section class="view" data-view="data" aria-hidden="true">
+        <div class="view-scroll">
+          <header class="view-header">
+            <div><p class="eyebrow">Ενότητα II · Δεδομένα &amp; Features</p><h1>EDA και αναπαραστάσεις</h1></div>
+            <p class="lead-block">Υποσύνολο 10.000 εικόνων (5k/κλάση), stratified 70/15/15. Συγκρίνουμε handcrafted features (HOG, LBP, Color) με βαθιές αναπαραστάσεις (CNN), πριν από κάθε ταξινομητή.</p>
+          </header>
+
+          <div class="grid-2" style="margin-bottom:18px">
+            <figure class="figure-card"><img class="zoomable" src="assets/viz2d.png" alt="2D προβολές PCA/t-SNE/UMAP">
+              <figcaption>2D προβολές (PCA / t-SNE / UMAP) για HOG, LBP, Color και CNN features. Τα CNN features διαχωρίζουν σαφώς καλύτερα.</figcaption></figure>
+            <div style="display:flex; flex-direction:column; gap:16px">
+              <div class="card"><h3>Τι συλλαμβάνει κάθε feature</h3>
+                <p>HOG → δομή/ακμές · LBP → τοπική υφή · Color → κατανομή χρωμάτων · CNN (ResNet18) → ιεραρχικές, σημασιολογικές αναπαραστάσεις.</p>
+                <div class="chips"><span class="chip">HOG · 1764-d</span><span class="chip">LBP · 10-d</span><span class="chip">Color · 192-d</span><span class="chip">CNN · 512-d</span></div></div>
+              <div class="card"><h3>Κανονικοποίηση</h3><p>StandardScaler (fit στο train) + PCA→150 για τα handcrafted. Τα CNN features έχουν ήδη ImageNet normalization.</p></div>
+              <figure class="figure-card"><img class="zoomable" src="assets/intensity.png" alt="Ιστογράμματα έντασης ανά κλάση">
+                <figcaption>Ιστογράμματα pixel intensity ανά κλάση — σχεδόν ταυτόσημα, άρα το σήμα είναι τοπικό/δομικό.</figcaption></figure>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 · Αρχιτεκτονικές -->
+      <section class="view" data-view="architectures" aria-hidden="true">
+        <div class="workbench">
+          <aside class="arch-sidebar">
+            <div class="sidebar-heading"><p>Ενότητα III</p><strong>9 προσεγγίσεις</strong></div>
+            <div id="arch-list" class="arch-list" role="listbox" aria-label="Επιλογή αρχιτεκτονικής"></div>
+          </aside>
+          <article class="arch-detail" aria-live="polite">
+            <div class="arch-detail-inner" id="arch-detail"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 4 · Αποτελέσματα -->
+      <section class="view" data-view="results" aria-hidden="true">
+        <div class="view-scroll">
+          <header class="view-header">
+            <div><p class="eyebrow">Ενότητα IV · Αποτελέσματα</p><h1>Ενιαίο benchmark (full-data, in-distribution)</h1></div>
+            <p class="lead-block">Καθαρή ιεραρχία: handcrafted → ImageNet features → foundation embeddings → full fine-tuning. Η αναπαράσταση κυριαρχεί έναντι της πολυπλοκότητας του ταξινομητή.</p>
+          </header>
+          <div class="table-wrap" id="results-table" style="margin-bottom:20px"></div>
+          <figure class="figure-card"><img class="zoomable" src="assets/benchmark.png" alt="Benchmark: full-data ranking και few-shot">
+            <figcaption>Κατάταξη full-data (πάνω) και σύγκριση few-shot (κάτω). Κόκκινο: οι επιπλέον αρχιτεκτονικές (Dual-Branch, CLIP/DINOv2 probes).</figcaption></figure>
+        </div>
+      </section>
+
+      <!-- 5 · Few-shot -->
+      <section class="view" data-view="fewshot" aria-hidden="true">
+        <div class="view-scroll">
+          <header class="view-header">
+            <div><p class="eyebrow">Ενότητα V · Few-shot</p><h1>Πόσο data-efficient είναι κάθε μέθοδος</h1></div>
+            <p class="lead-block">Με 10 και 5 δείγματα ανά κλάση. Τα frozen foundation probes (CLIP/DINOv2) κυριαρχούν — η αναπαράσταση κωδικοποιεί ήδη το σήμα, χωρίς εκπαίδευση backbone.</p>
+          </header>
+          <div class="grid-2">
+            <div class="table-wrap" id="fewshot-table"></div>
+            <div style="display:flex; flex-direction:column; gap:16px">
+              <div class="card"><h3>CLIP-probe — ο νικητής</h3><p>10-shot 0.743 ± 0.006 · 5-shot 0.675 ± 0.033 (μέσος όρος 3 seeds). Καλύτερο και πιο σταθερό από κάθε fine-tuned δίκτυο.</p></div>
+              <div class="card"><h3>ResNet18 &gt; EfficientNet</h3><p>Στο few-shot το μικρότερο ResNet18 (5-shot 0.619) ξεπερνά το EfficientNet (0.513): το μεγαλύτερο δίκτυο υπερπροσαρμόζεται σε λίγα δείγματα.</p></div>
+              <div class="card"><h3>SimCLR αστάθεια</h3><p>Ανταγωνιστικό στο 10-shot (0.703) αλλά το 5-shot κατέρρευσε στο 0.516 (≈ τύχη) — υψηλή διακύμανση στο few-shot fine-tuning.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6 · Συμπεράσματα -->
+      <section class="view" data-view="conclusions" aria-hidden="true">
+        <div class="view-scroll">
+          <header class="view-header">
+            <div><p class="eyebrow">Ενότητα VI · Συμπεράσματα</p><h1>Τι μάθαμε από το CIFAKE</h1></div>
+          </header>
+          <div class="findings" id="findings"></div>
+          <div class="lead-block" style="margin-top:22px">
+            <div class="card"><h3>Σύνδεση με το κύριο project</h3><p>Το ότι η artifact-aware dual-branch αρχιτεκτονική μόλις ισοφαρίζει ένα απλό CNN στα 32×32 αποτελεί <strong>εμπειρική στήριξη της απόφασης</strong> του κύριου project να μετακινηθεί σε υψηλότερη ανάλυση, όπου τα frequency fingerprints είναι πλουσιότερα. Πλήρες write-up: <em>presentation_cifake/CIFAKE_Report.pdf</em>.</p></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="statusbar">
+      <div><span id="section-index">01</span><span>/</span><span>06</span><strong id="section-name">Πρόβλημα</strong></div>
+      <div class="status-actions">
+        <button id="previous-section" class="icon-button dark-icon" type="button" title="Προηγούμενη" aria-label="Προηγούμενη ενότητα">←</button>
+        <button id="next-section" class="icon-button dark-icon" type="button" title="Επόμενη" aria-label="Επόμενη ενότητα">→</button>
+      </div>
+    </footer>
+  </div>
+
+  <dialog id="image-dialog" class="image-dialog" aria-label="Μεγέθυνση εικόνας">
+    <button id="image-close" class="icon-button" type="button" title="Κλείσιμο" aria-label="Κλείσιμο μεγέθυνσης">×</button>
+    <img id="dialog-image" alt="">
+  </dialog>
+
+  <script src="app.js?v=1"></script>
+</body>
+</html>
