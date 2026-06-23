@@ -44,6 +44,7 @@ frequency cues need higher resolution to pay off.
 
 - Notebook: [`notebooks/cifake-study.ipynb`](notebooks/cifake-study.ipynb)
 - Write-up: [`docs/supplementary-cifake.md`](docs/supplementary-cifake.md) — report PDF in [`presentation_cifake/`](presentation_cifake/)
+- Interactive presentation: [`presentation_cifake/presentation.html`](presentation_cifake/presentation.html)
 
 See [CLAUDE.md](CLAUDE.md) for the working spec, and **[docs/](docs/)** for the full project documentation — data, shared methods, per-pipeline deep dives, evaluation protocols, results, and the app.
 
